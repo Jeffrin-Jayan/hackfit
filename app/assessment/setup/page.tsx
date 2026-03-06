@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { audioApi } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -27,6 +28,7 @@ export default function AssessmentSetupPage() {
   const [micLevel, setMicLevel] = useState(0)
   const [isTesting, setIsTesting] = useState(false)
   const [testPassed, setTestPassed] = useState(false)
+  const [testAttempted, setTestAttempted] = useState(false)
   const [config, setConfig] = useState<{
     topic: string
     difficulty: string
@@ -56,10 +58,13 @@ export default function AssessmentSetupPage() {
     }
   }, [])
 
-  // Test microphone
+  // Test microphone (record, send to backend, check for AI presence)
+  const [aiDetected, setAiDetected] = useState<boolean | null>(null)
   const testMicrophone = useCallback(async () => {
     setIsTesting(true)
     setTestPassed(false)
+    setTestAttempted(false)
+    setAiDetected(null)
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -87,22 +92,41 @@ export default function AssessmentSetupPage() {
 
       const interval = setInterval(checkLevel, 100)
 
+      // set up media recorder
+      const chunks: Blob[] = []
+      const recorder = new MediaRecorder(stream)
+      recorder.ondataavailable = (e) => chunks.push(e.data)
+      recorder.start()
+
       // Test for 3 seconds
-      setTimeout(() => {
+      setTimeout(async () => {
         clearInterval(interval)
+        recorder.stop()
+
         stream.getTracks().forEach((track) => track.stop())
         audioContext.close()
         setIsTesting(false)
 
+        // send audio to backend
+        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
+        try {
+          const resp = await audioApi.uploadTest(blob)
+          setAiDetected(resp.aiDetected)
+          console.log('AI detection result:', resp.aiDetected)
+        } catch (err) {
+          console.error('Upload failed', err)
+        }
+
         if (maxLevel > 15) {
           setTestPassed(true)
-          setCurrentStep("ready")
+          setCurrentStep('ready')
         } else {
           setTestPassed(false)
         }
+        setTestAttempted(true)
       }, 3000)
     } catch (error) {
-      console.error("Mic test error:", error)
+      console.error('Mic test error:', error)
       setIsTesting(false)
     }
   }, [isTesting])
@@ -256,7 +280,7 @@ export default function AssessmentSetupPage() {
                 </p>
               </div>
 
-              {!testPassed ? (
+              <div className="flex flex-col items-center gap-2">
                 <Button
                   onClick={testMicrophone}
                   disabled={isTesting}
@@ -275,11 +299,24 @@ export default function AssessmentSetupPage() {
                     </>
                   )}
                 </Button>
-              ) : (
-                <div className="flex items-center gap-2 text-green-500">
-                  <CheckCircle2 className="w-6 h-6" />
-                  <span className="font-medium">Microphone working</span>
-                </div>
+                {testAttempted && (
+                  testPassed ? (
+                    <div className="flex items-center gap-2 text-green-500">
+                      <CheckCircle2 className="w-6 h-6" />
+                      <span className="font-medium">Microphone working</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-destructive">
+                      <XCircle className="w-6 h-6" />
+                      <span className="font-medium">Microphone not working</span>
+                    </div>
+                  )
+                )}
+              </div>
+              {aiDetected !== null && (
+                <p className="mt-2 text-sm">
+                  AI presence detected: {aiDetected ? 'Yes' : 'No'}
+                </p>
               )}
             </CardContent>
           </Card>

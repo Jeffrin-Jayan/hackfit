@@ -10,7 +10,7 @@ This repository is linked to a [v0](https://v0.app) project. You can continue de
 
 ## Getting Started
 
-First, run the development server:
+First, run the frontend development server:
 
 ```bash
 npm run dev
@@ -19,6 +19,24 @@ yarn dev
 # or
 pnpm dev
 ```
+
+The backend is now implemented with Node.js and Express. To start it locally (from the `backend` directory):
+
+```bash
+cd backend && npm install && npm run dev # requires nodemon for hot reload
+```
+
+You can then visit [http://localhost:8000](http://localhost:8000) for the API health check.
+
+### Audio recording & AI detection
+
+The frontend now supports capturing microphone input during the "Test Microphone" step. The recorded audio is uploaded to MongoDB (stored via GridFS) and analysed for possible AI presence. The backend exposes:
+
+- `POST /api/v1/audio/test` – accepts multipart/form-data audio and returns `{fileId, aiDetected}`
+- `GET /api/v1/audio/:id` – fetch metadata including AI flag
+- `GET /api/v1/audio/file/:fileId` – download the raw audio file
+
+This is used by the setup page; results are shown on screen when you click the Test Microphone button.
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 

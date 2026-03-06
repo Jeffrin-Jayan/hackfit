@@ -1,6 +1,6 @@
 /**
  * SkillBridge API Client
- * Handles communication with the FastAPI backend
+ * Handles communication with the Express backend
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -184,6 +184,28 @@ export const authApi = {
       method: "POST",
     })
     return handleResponse(response)
+  },
+}
+
+// Audio API
+export const audioApi = {
+  async uploadTest(blob: Blob) {
+    const form = new FormData()
+    form.append('audio', blob, 'test.webm')
+    const response = await fetch(`${API_BASE_URL}/api/v1/audio/test`, {
+      method: 'POST',
+      body: form,
+    })
+    return handleResponse(response)
+  },
+  async getMetadata(id: string) {
+    const response = await fetch(`${API_BASE_URL}/api/v1/audio/${id}`)
+    return handleResponse(response)
+  },
+  async download(fileId: string) {
+    const response = await fetch(`${API_BASE_URL}/api/v1/audio/file/${fileId}`)
+    if (!response.ok) throw new Error('Failed to download audio')
+    return response.blob()
   },
 }
 

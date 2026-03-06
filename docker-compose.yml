@@ -39,7 +39,7 @@ services:
     networks:
       - skillbridge-network
 
-  # Backend - FastAPI Application
+  # Backend - Node/Express Application
   backend:
     build:
       context: ./backend
