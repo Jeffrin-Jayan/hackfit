@@ -1,0 +1,33 @@
+# SkillBridge Backend Dependencies
+
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# Request handling
+python-multipart==0.0.9
+aiofiles==24.1.0
+
+# AI / Gemini
+google-generativeai==0.7.2
+
+# MongoDB
+motor==3.5.1
+pymongo==4.8.0
+
+# Password hashing
+bcrypt==4.2.0
+python-jose[cryptography]==3.3.0
+
+# Data validation
+pydantic==2.9.1
+pydantic-settings==2.5.2
+
+# Environment
+python-dotenv==1.0.1
+
+# Audio processing
+numpy==1.26.4
+
+# HTTP client
+httpx==0.27.2
