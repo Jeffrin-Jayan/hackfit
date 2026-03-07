@@ -144,6 +144,7 @@ export function useVoiceCapture(): VoiceCaptureState & VoiceCaptureActions {
     if (event.error === "network") {
     return
       }
+
         if (event.error === "not-allowed") {
           setError("Microphone access denied")
         }

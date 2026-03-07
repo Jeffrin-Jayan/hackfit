@@ -21,14 +21,7 @@ import {
 
 export default function CodeResultsPage() {
   const router = useRouter()
-  const { user, isLoading } = useAuth()
   const [showConfetti, setShowConfetti] = useState(false)
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/auth/login")
-    }
-  }, [isLoading, user, router])
 
   useEffect(() => {
     if (user?.code_status === "passed") {
@@ -49,6 +42,14 @@ export default function CodeResultsPage() {
   const passed = user.code_status === "passed"
   const score = user.code_score || 0
 
+  const [assessmentResult, setAssessmentResult] = useState<any>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("codeResult");
+      if (stored) setAssessmentResult(JSON.parse(stored));
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -64,6 +65,51 @@ export default function CodeResultsPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
           {/* Result Banner */}
+          {assessmentResult && (
+            <Card className="mb-8">
+              <CardContent>
+                {assessmentResult.cheatScore > 5 ? (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertDescription>
+                      AI assistance detected during your attempt. Results may be invalid.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert variant="default" className="mb-4">
+                    <AlertDescription>No cheating behavior detected.</AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+              <CardHeader>
+                <CardTitle>Submission Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <strong>Language:</strong> {assessmentResult.language}
+                  </div>
+                  <div>
+                    <strong>Time Used:</strong> {assessmentResult.timeUsed} seconds
+                  </div>
+                  <div>
+                    <strong>Cheating score:</strong> {assessmentResult.cheatScore}
+                  </div>
+                  <details className="mt-2">
+                    <summary className="font-medium">Compile result</summary>
+                    <pre className="bg-muted p-2 rounded text-xs overflow-auto">
+                      {JSON.stringify(assessmentResult.compileResult, null, 2)}
+                    </pre>
+                  </details>
+                  <details className="mt-2">
+                    <summary className="font-medium">Submitted code</summary>
+                    <pre className="bg-muted p-2 rounded text-xs overflow-auto">
+                      {assessmentResult.submittedCode}
+                    </pre>
+                  </details>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <Card className={`mb-8 ${passed ? "border-green-500/50" : "border-destructive/50"}`}>
             <CardContent className="pt-6">
               <div className="text-center">

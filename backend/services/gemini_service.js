@@ -9,6 +9,26 @@ export async function evaluateWithGemini({ topic, question, transcript, audio_me
   return _mockEvaluation();
 }
 
+// helper to generate freeform text from the AI model
+export async function generateText(prompt) {
+  if (!process.env.GEMINI_API_KEY) {
+    // return a simple JSON string to satisfy consumers
+    return JSON.stringify({
+      question: `Mock ${prompt}`,
+      exampleInput: "[]",
+      exampleOutput: "",
+      constraints: "None",
+    });
+  }
+  // real integration would go here. For now we also just echo the prompt.
+  return JSON.stringify({
+    question: `AI generated from prompt: ${prompt}`,
+    exampleInput: "[]",
+    exampleOutput: "",
+    constraints: "" ,
+  });
+}
+
 export async function checkResponseConsistency(responses) {
   if (!process.env.GEMINI_API_KEY) {
     return { consistent: true, confidence: 0.8, inconsistencies: [], analysis: 'Mock analysis - API key not configured' };

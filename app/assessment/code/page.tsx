@@ -99,6 +99,11 @@ export default function CodeChallengePage() {
   const { user, isLoading: authLoading, refreshUser } = useAuth()
   const { canAccess, isLoading: accessLoading } = usePhaseAccess("code")
   
+  // immediately forward to the new compiler page
+  useEffect(() => {
+    router.push("/assessment/code/compiler");
+  }, [router]);
+
   const [currentChallenge, setCurrentChallenge] = useState(0)
   const [code, setCode] = useState("")
   const [consoleOutput, setConsoleOutput] = useState<ConsoleOutput[]>([])

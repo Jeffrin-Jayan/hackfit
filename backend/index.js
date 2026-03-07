@@ -32,6 +32,12 @@ app.use("/api/v1/session", sessionRouter);
 app.use("/api/v1/evaluate", evaluationRouter);
 app.use("/api/v1/audio", audioRouter);
 
+// coding assessment routes
+import questionRouter from "./routes/question.js";
+import compileRouter from "./routes/compile.js";
+app.use("/api/v1/question", questionRouter);
+app.use("/api/v1/compile", compileRouter);
+
 // Root endpoint
 app.get("/", (req, res) => {
   res.json({
