@@ -7,6 +7,7 @@ import authRouter from "./routes/auth.js";
 import sessionRouter from "./routes/session.js";
 import evaluationRouter from "./routes/evaluation.js";
 import audioRouter from "./routes/audio.js";
+import compileRoutes from "./routes/compile.js"
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ import questionRouter from "./routes/question.js";
 import compileRouter from "./routes/compile.js";
 app.use("/api/v1/question", questionRouter);
 app.use("/api/v1/compile", compileRouter);
+app.use("/api/v1/compile", compileRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {

@@ -7,35 +7,70 @@ interface CodeEditorProps {
   value: string;
   language: string;
   onChange: (code: string) => void;
+  locked?: boolean;
   onPasteAttempt?: () => void;
 }
 
-export function CodeEditor({ value, language, onChange, onPasteAttempt }: CodeEditorProps) {
+export function CodeEditor({
+  value,
+  language,
+  onChange,
+  locked = false,
+  onPasteAttempt,
+}: CodeEditorProps) {
+
   const monaco = useMonaco();
   const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<any>(null);
 
   useEffect(() => {
-    if (monaco) {
-      monaco.editor.defineTheme("assessmentTheme", {
-        base: "vs",
-        inherit: true,
-        rules: [],
-        colors: {},
-      });
-    }
+    if (!monaco) return;
+
+    monaco.editor.defineTheme("assessmentTheme", {
+      base: "vs",
+      inherit: true,
+      rules: [],
+      colors: {},
+    });
   }, [monaco]);
 
+  useEffect(() => {
+    // whenever the locked prop changes, update the editor if we have it
+    if (editorRef.current) {
+      editorRef.current.updateOptions({ readOnly: locked });
+    }
+  }, [locked]);
+
+  useEffect(() => {
+    // cleanup monaco disposables on unmount
+    return () => {
+      if (editorRef.current?._disposables) {
+        editorRef.current._disposables.forEach((d: any) => d && d.dispose && d.dispose());
+      }
+    };
+  }, []);
+
   const handleEditorDidMount = (editor: any) => {
-    editor.updateOptions({ readOnly: false });
+    editorRef.current = editor;
+    editor.updateOptions({ readOnly: locked });
 
-    // disable context menu
-    editor.onContextMenu((e: any) => e.event.preventDefault());
+    // disable right click menu
+    const cmDisposable = editor.onContextMenu((e: any) => {
+      e.event.preventDefault();
+    });
 
-    // intercept copy/paste shortcuts
-    editor.onKeyDown((e: any) => {
-      // use standard KeyboardEvent properties to avoid monaco null
-      const isCopy = (e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === "c";
-      const isPaste = (e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === "v";
+    // safe key detection for monaco
+    const kdDisposable = editor.onKeyDown((e: any) => {
+      const keyCode = e.keyCode;
+      const isCtrl = e.ctrlKey || e.metaKey;
+
+      // Monaco key codes
+      const KEY_C = 33;
+      const KEY_V = 52;
+
+      const isCopy = isCtrl && keyCode === KEY_C;
+      const isPaste = isCtrl && keyCode === KEY_V;
+
       if (isCopy || isPaste) {
         e.preventDefault();
         if (isPaste && onPasteAttempt) {
@@ -44,27 +79,50 @@ export function CodeEditor({ value, language, onChange, onPasteAttempt }: CodeEd
       }
     });
 
-    // also listen for native paste events
-    if (containerRef.current) {
-      containerRef.current.addEventListener("paste", (e) => {
-        e.preventDefault();
-        if (onPasteAttempt) onPasteAttempt();
-      });
-      containerRef.current.addEventListener("copy", (e) => e.preventDefault());
-      containerRef.current.addEventListener("contextmenu", (e) => e.preventDefault());
-    }
+    // store disposables for cleanup
+    editorRef.current._disposables = [cmDisposable, kdDisposable];
   };
 
+  // attach DOM listeners separately so we can clean them up on unmount
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const pasteHandler = (e: ClipboardEvent) => {
+      e.preventDefault();
+      if (onPasteAttempt) onPasteAttempt();
+    };
+    const copyHandler = (e: ClipboardEvent) => {
+      e.preventDefault();
+    };
+    const menuHandler = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    el.addEventListener("paste", pasteHandler);
+    el.addEventListener("copy", copyHandler);
+    el.addEventListener("contextmenu", menuHandler);
+    return () => {
+      el.removeEventListener("paste", pasteHandler);
+      el.removeEventListener("copy", copyHandler);
+      el.removeEventListener("contextmenu", menuHandler);
+    };
+  }, [onPasteAttempt]);
+
   return (
+
     <div ref={containerRef} className="border rounded">
+
       <Editor
         height="500px"
         language={language}
         value={value}
         theme="assessmentTheme"
-        onChange={(val) => (val !== undefined ? onChange(val) : null)}
+        onChange={(val) => {
+          if (val !== undefined) {
+            onChange(val);
+          }
+        }}
         options={{
-          readOnly: false,
+          readOnly: locked,
           fontSize: 14,
           minimap: { enabled: false },
           lineNumbers: "on",
@@ -74,6 +132,8 @@ export function CodeEditor({ value, language, onChange, onPasteAttempt }: CodeEd
         }}
         onMount={handleEditorDidMount}
       />
+
     </div>
+
   );
 }

@@ -31,8 +31,11 @@ export function useCodeMonitor(): UseCodeMonitorReturn {
       e.preventDefault();
       setState((s) => ({ ...s, pasteCount: s.pasteCount + 1 }));
     };
+    // we no longer track blur events on window because UI interactions
+    // (like clicking a dropdown) often fire blur even though the user
+    // remains in the same tab; visibilitychange handles real tab switches.
     const onBlur = () => {
-      setState((s) => ({ ...s, blurCount: s.blurCount + 1, tabSwitchCount: s.tabSwitchCount + 1 }));
+      // noop
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
@@ -66,15 +69,23 @@ export function useCodeMonitor(): UseCodeMonitorReturn {
     };
 
     window.addEventListener("paste", onPaste);
-    window.addEventListener("blur", onBlur);
+    // custom event from editor when paste shortcut attempted
+    const onPasteAttempted = () => {
+      setState((s) => ({ ...s, pasteCount: s.pasteCount + 1 }));
+    };
+    window.addEventListener("assessment-paste-attempt", onPasteAttempted as any);
+    // blur listener intentionally omitted (see above)
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("keydown", onKeyDown);
 
     // multi-tab lock
+    // if another tab is already active when we mount, we note it but do
+    // _not_ treat it as a cheating event; only subsequent storage events
+    // (i.e. the user opening or switching to another tab after starting)
+    // will bump the counter.
     const existing = localStorage.getItem("assessment_active");
     if (existing && existing !== sessionId.current) {
-      // another tab already active
-      setState((s) => ({ ...s, tabSwitchCount: s.tabSwitchCount + 1 }));
+      console.warn("Another assessment tab was already open");
     }
     localStorage.setItem("assessment_active", sessionId.current);
     const onStorage = (e: StorageEvent) => {
@@ -86,7 +97,7 @@ export function useCodeMonitor(): UseCodeMonitorReturn {
 
     return () => {
       window.removeEventListener("paste", onPaste);
-      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("assessment-paste-attempt", onPasteAttempted as any);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("storage", onStorage);

@@ -10,7 +10,8 @@ interface UseCodingTimerReturn {
 
 export function useCodingTimer(): UseCodingTimerReturn {
   const [phase, setPhase] = useState<Phase>("reading");
-  const [timeLeft, setTimeLeft] = useState(10 * 60);
+  // reading phase is 1 minute, coding phase will be 10 minutes
+  const [timeLeft, setTimeLeft] = useState(1 * 60);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export function useCodingTimer(): UseCodingTimerReturn {
     if (timeLeft <= 0) {
       if (phase === "reading") {
         setPhase("coding");
-        setTimeLeft(15 * 60);
+        setTimeLeft(10 * 60);
       } else if (phase === "coding") {
         setPhase("ended");
         setTimeLeft(0);

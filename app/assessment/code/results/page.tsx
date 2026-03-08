@@ -21,6 +21,7 @@ import {
 
 export default function CodeResultsPage() {
   const router = useRouter()
+  const { user, isLoading } = useAuth()
   const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
